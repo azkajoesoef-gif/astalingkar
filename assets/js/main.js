@@ -13,7 +13,7 @@
   const topbar        = document.getElementById('topbar');
   const mobileBtn     = document.getElementById('mobile-menu-btn');
   const mobileMenu    = document.getElementById('mobile-menu');
-  const menuIcon      = document.getElementById('menu-icon');
+  const mobileClose   = document.getElementById('mobile-menu-close');
   const form          = document.getElementById('consultation-form');
   const emailBtn      = document.getElementById('email-fallback-btn');
   const waFloat       = document.getElementById('wa-float');
@@ -25,10 +25,9 @@
   /* ═══════════ 1. PRELOADER ═══════════ */
   (function initPreloader() {
     if (!preloader || !preloaderBar) return;
-
     let progress = 0;
     const interval = setInterval(function () {
-      progress += Math.random() * 20 + 5;
+      progress += Math.random() * 22 + 8;
       if (progress >= 100) {
         progress = 100;
         clearInterval(interval);
@@ -40,8 +39,7 @@
         }, 300);
       }
       preloaderBar.style.width = progress + '%';
-    }, 120);
-
+    }, 110);
     document.body.style.overflow = 'hidden';
   })();
 
@@ -72,14 +70,13 @@
     }
     animateRing();
 
-    // Hover effect untuk link & button
-    document.querySelectorAll('a, button, .magnetic-btn').forEach(function (el) {
+    document.querySelectorAll('a, button, .praktik-btn, .magnetic-btn, .ripple-btn').forEach(function (el) {
       el.addEventListener('mouseenter', function () { ring.classList.add('cursor-hover'); });
       el.addEventListener('mouseleave', function () { ring.classList.remove('cursor-hover'); });
     });
   })();
 
-  /* ═══════════ 3. SCROLL PROGRESS BAR ═══════════ */
+  /* ═══════════ 3. SCROLL PROGRESS ═══════════ */
   function updateProgress() {
     if (!progressBar) return;
     const scrollTop = window.pageYOffset;
@@ -88,30 +85,28 @@
     progressBar.style.width = pct + '%';
   }
 
-  /* ═══════════ 4. TOPBAR + NAVBAR SCROLL ═══════════ */
+  /* ═══════════ 4. NAVBAR SCROLL STATE ═══════════ */
   function handleNavScroll() {
     const y = window.pageYOffset;
-    const scrolled = y > 40;
 
     if (topbar) {
-      if (y > 80) {
-        topbar.style.transform = 'translateY(-100%)';
+      if (y > 60) {
+        topbar.style.height = '0';
         topbar.style.opacity = '0';
-        navbar.style.top = '0';
+        topbar.style.overflow = 'hidden';
       } else {
-        topbar.style.transform = 'translateY(0)';
+        topbar.style.height = '';
         topbar.style.opacity = '1';
-        navbar.style.top = '40px';
       }
     }
 
     if (navbar) {
-      if (scrolled) {
-        navbar.classList.remove('navbar-transparent');
-        navbar.classList.add('navbar-solid');
+      if (y > 60) {
+        navbar.classList.remove('at-top');
+        navbar.classList.add('scrolled');
       } else {
-        navbar.classList.remove('navbar-solid');
-        navbar.classList.add('navbar-transparent');
+        navbar.classList.remove('scrolled');
+        navbar.classList.add('at-top');
       }
     }
   }
@@ -119,7 +114,6 @@
   /* ═══════════ 5. FLOATING BUTTONS ═══════════ */
   function handleFloatingButtons() {
     const show = window.pageYOffset > 400;
-
     [waFloat, backTop].forEach(function (btn) {
       if (!btn) return;
       if (show) {
@@ -132,7 +126,7 @@
     });
   }
 
-  /* ═══════════ 6. SCROLL LISTENER (throttled) ═══════════ */
+  /* ═══════════ 6. SCROLL LISTENER ═══════════ */
   let ticking = false;
   window.addEventListener('scroll', function () {
     if (!ticking) {
@@ -140,13 +134,13 @@
         updateProgress();
         handleNavScroll();
         handleFloatingButtons();
+        updateScrollSpy();
         ticking = false;
       });
       ticking = true;
     }
   }, { passive: true });
 
-  // Init
   updateProgress();
   handleNavScroll();
   handleFloatingButtons();
@@ -154,16 +148,20 @@
   /* ═══════════ 7. MOBILE MENU ═══════════ */
   function openMenu() {
     mobileMenu.classList.remove('hidden');
+    requestAnimationFrame(function () {
+      mobileMenu.classList.add('is-open');
+    });
     mobileBtn.setAttribute('aria-expanded', 'true');
-    mobileBtn.setAttribute('aria-label', 'Tutup menu');
-    menuIcon.classList.replace('fa-bars', 'fa-xmark');
+    document.body.style.overflow = 'hidden';
   }
 
   function closeMenu() {
-    mobileMenu.classList.add('hidden');
+    mobileMenu.classList.remove('is-open');
     mobileBtn.setAttribute('aria-expanded', 'false');
-    mobileBtn.setAttribute('aria-label', 'Buka menu');
-    menuIcon.classList.replace('fa-xmark', 'fa-bars');
+    document.body.style.overflow = '';
+    setTimeout(function () {
+      mobileMenu.classList.add('hidden');
+    }, 400);
   }
 
   if (mobileBtn) {
@@ -171,6 +169,10 @@
       const isOpen = mobileBtn.getAttribute('aria-expanded') === 'true';
       isOpen ? closeMenu() : openMenu();
     });
+  }
+
+  if (mobileClose) {
+    mobileClose.addEventListener('click', closeMenu);
   }
 
   document.addEventListener('keydown', function (e) {
@@ -195,8 +197,7 @@
       e.preventDefault();
 
       const navH = navbar ? navbar.offsetHeight : 80;
-      const topbarH = (topbar && window.pageYOffset < 80) ? 40 : 0;
-      const offset = navH + topbarH - 10;
+      const offset = navH - 10;
       const pos = target.getBoundingClientRect().top + window.pageYOffset - offset;
 
       window.scrollTo({ top: pos, behavior: 'smooth' });
@@ -223,15 +224,37 @@
           observer.unobserve(entry.target);
         }
       });
-    }, {
-      threshold: 0.12,
-      rootMargin: '0px 0px -60px 0px'
-    });
+    }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
 
     els.forEach(function (el) { observer.observe(el); });
   }
 
-  /* ═══════════ 10. ACTIVE NAV LINK ═══════════ */
+  /* ═══════════ 10. SCROLL SPY ═══════════ */
+  const spySections = ['beranda','tentang','filosofi','praktik','proses','afiliasi','kontak'];
+
+  function updateScrollSpy() {
+    const dots = document.querySelectorAll('.scroll-dot');
+    if (!dots.length) return;
+
+    let activeId = 'beranda';
+    const probe = window.innerHeight * 0.4;
+
+    spySections.forEach(function (id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= probe && rect.bottom >= probe) {
+        activeId = id;
+      }
+    });
+
+    dots.forEach(function (dot) {
+      const href = dot.getAttribute('href').replace('#', '');
+      dot.classList.toggle('active', href === activeId);
+    });
+  }
+
+  /* ═══════════ 11. ACTIVE NAV LINK ═══════════ */
   function initActiveNav() {
     const sections = document.querySelectorAll('section[id]');
     const links = document.querySelectorAll('.nav-link');
@@ -251,7 +274,7 @@
     sections.forEach(function (s) { observer.observe(s); });
   }
 
-  /* ═══════════ 11. FAQ ACCORDION ═══════════ */
+  /* ═══════════ 12. FAQ ACCORDION ═══════════ */
   function initFAQ() {
     const items = document.querySelectorAll('.faq-item');
     if (!items.length) return;
@@ -265,7 +288,6 @@
       btn.addEventListener('click', function () {
         const isOpen = btn.getAttribute('aria-expanded') === 'true';
 
-        // Tutup semua dulu
         items.forEach(function (other) {
           const otherBtn = other.querySelector('.faq-btn');
           const otherContent = other.querySelector('.faq-content');
@@ -275,7 +297,6 @@
           if (otherIcon) otherIcon.style.transform = 'rotate(0deg)';
         });
 
-        // Buka yang diklik (jika sebelumnya tertutup)
         if (!isOpen) {
           btn.setAttribute('aria-expanded', 'true');
           content.style.maxHeight = content.scrollHeight + 'px';
@@ -285,14 +306,55 @@
     });
   }
 
-  /* ═══════════ 12. BACK TO TOP ═══════════ */
+  /* ═══════════ 13. PRAKTIK ACCORDION ═══════════ */
+  function initPraktikAccordion() {
+    const items = document.querySelectorAll('.praktik-item');
+    if (!items.length) return;
+
+    items.forEach(function (item) {
+      const btn = item.querySelector('.praktik-btn');
+      const content = item.querySelector('.praktik-content');
+      const num = item.querySelector('.praktik-num');
+      const icon = item.querySelector('.praktik-icon');
+      const toggle = item.querySelector('.praktik-toggle i');
+      if (!btn || !content) return;
+
+      btn.addEventListener('click', function () {
+        const isOpen = btn.getAttribute('aria-expanded') === 'true';
+
+        items.forEach(function (other) {
+          const otherBtn = other.querySelector('.praktik-btn');
+          const otherContent = other.querySelector('.praktik-content');
+          const otherNum = other.querySelector('.praktik-num');
+          const otherIcon = other.querySelector('.praktik-icon');
+          const otherToggle = other.querySelector('.praktik-toggle i');
+
+          if (otherBtn) otherBtn.setAttribute('aria-expanded', 'false');
+          if (otherContent) otherContent.style.maxHeight = '0';
+          if (otherNum) otherNum.style.color = '';
+          if (otherIcon) otherIcon.style.backgroundColor = '';
+          if (otherToggle) otherToggle.style.transform = 'rotate(0deg)';
+        });
+
+        if (!isOpen) {
+          btn.setAttribute('aria-expanded', 'true');
+          content.style.maxHeight = content.scrollHeight + 'px';
+          if (num) num.style.color = '#c9a961';
+          if (icon) icon.style.backgroundColor = '#c9a961';
+          if (toggle) toggle.style.transform = 'rotate(45deg)';
+        }
+      });
+    });
+  }
+
+  /* ═══════════ 14. BACK TO TOP ═══════════ */
   if (backTop) {
     backTop.addEventListener('click', function () {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   }
 
-  /* ═══════════ 13. WHATSAPP GENERATOR ═══════════ */
+  /* ═══════════ 15. WHATSAPP ═══════════ */
   function buildMessage(nama, kontak, kategori, pesan) {
     return [
       'Halo ASTA LINGKAR, saya ingin konsultasi.',
@@ -313,7 +375,7 @@
       alert('Mohon lengkapi seluruh kolom bertanda * sebelum mengirim.');
       return null;
     }
-    return { nama: nama, kontak: kontak, kategori: kategori, pesan: pesan };
+    return { nama, kontak, kategori, pesan };
   }
 
   if (form) {
@@ -342,7 +404,7 @@
     });
   }
 
-  /* ═══════════ 14. MAGNETIC BUTTONS ═══════════ */
+  /* ═══════════ 16. MAGNETIC BUTTONS ═══════════ */
   function initMagnetic() {
     if (window.innerWidth < 1024) return;
     if (window.matchMedia('(pointer: coarse)').matches) return;
@@ -352,27 +414,58 @@
         const rect = btn.getBoundingClientRect();
         const x = e.clientX - rect.left - rect.width / 2;
         const y = e.clientY - rect.top - rect.height / 2;
-        btn.style.transform = 'translate(' + (x * 0.15) + 'px, ' + (y * 0.15) + 'px)';
+        btn.style.transform = 'translate(' + (x * 0.12) + 'px, ' + (y * 0.12) + 'px)';
       });
-
       btn.addEventListener('mouseleave', function () {
         btn.style.transform = '';
       });
     });
   }
 
-  /* ═══════════ 15. INIT ═══════════ */
-  function init() {
-    initReveal();
-    initActiveNav();
-    initFAQ();
-    initMagnetic();
+  /* ═══════════ 17. RIPPLE EFFECT ═══════════ */
+  function initRipple() {
+    document.querySelectorAll('.ripple-btn').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple-effect';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+        btn.appendChild(ripple);
+        setTimeout(function () { ripple.remove(); }, 800);
+      });
+    });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  /* ═══════════ 18. STAT COUNTER ═══════════ */
+  function initStats() {
+    const counters = document.querySelectorAll('.stat-counter');
+    if (!counters.length) return;
 
-})();
+    const observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+
+        const el = entry.target;
+        const target = parseInt(el.dataset.target, 10);
+        const pad = parseInt(el.dataset.pad || '0', 10);
+        let current = 0;
+        const step = Math.max(1, Math.floor(target / 30));
+
+        const timer = setInterval(function () {
+          current += step;
+          if (current >= target) {
+            current = target;
+            clearInterval(timer);
+          }
+          const str = String(current);
+          el.textContent = pad ? str.padStart(pad, '0') : str;
+        }, 40);
+
+        observer.unobserve(el);
+      });
+    }, { threshold: 0.5 });
+
+    counters.forEach(function (c) { observer.observe
